@@ -1,24 +1,30 @@
 
-var path = require('path');
+const Path = require('path');
 var cmd = require('commander');
-var childProcess = require('child_process');
-var phantomjs = require('phantomjs-prebuilt');
 
-function runStats(url) {
-  var binPath = phantomjs.path;
-  var childArgs = [path.join(__dirname, 'stats.js'), url];
-  childProcess.execFile(binPath, childArgs, function(err, stdout, stderr) {
-    console.log(stdout);
-  });
+const StatRunner = require(Path.join(__dirname, 'stat-runner'));
+
+function collect(val, memo) {
+  memo.push(val);
+  return memo;
 }
 
 cmd.version('0.0.1')
-  .usage("-u <url>")
-  .option('-u <url>', 'Collect package stats on given url')
+  .usage("-u [url]")
+  .option('-u, --url [url]', 'Collect stats for packages on given url')
+  .option('-p, --phantom', 'Trust size measurements from PhantomJS (Requires no Accept-Encoding)')
+  .option('-e, --enc [enc]', 'Collect stats requested with Encoding', collect, [])
   .parse(process.argv);
 
 if (cmd.url) {
-  runStats(cmd.url);
+  runner = new StatRunner(cmd.url, cmd.enc, cmd.phantom);
+  runner.run((err, result) => {
+    if (err) {
+      console.log("Failed to collect package stats for "+cmd.url+" - "+err.message);
+    } else {
+      console.log(JSON.stringify(result, null, 2));
+    }
+  });
 } else {
   cmd.help();
 }

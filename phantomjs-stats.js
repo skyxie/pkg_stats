@@ -8,6 +8,10 @@ page.onResourceReceived = function(response) {
 };
 
 page.open(system.args[1], function(status) {
-  console.log(JSON.stringify(response, null, 2));
-  phantom.exit();
+  if (status == "success") {
+    console.log(JSON.stringify(responses));
+    phantom.exit(0);
+  } else {
+    phantom.exit(1);
+  }
 });
