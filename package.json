@@ -1,0 +1,11 @@
+{
+  "name": "pkg_stats",
+  "version": "0.0.1",
+  "private": true,
+  "dependencies": {
+    "phantomjs-prebuilt": "*",
+    "async": "*",
+    "commander": "*",
+    "underscore": "*"
+  }
+}
