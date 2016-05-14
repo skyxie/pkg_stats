@@ -5,12 +5,15 @@ const Zlib = require('zlib');
 const Http = require('http');
 const Stream = require('stream');
 
+/**
+ * SizeStream
+ *
+ * Writable stream that calculates total bytes written to stream.
+ */
 class SizeStream extends Stream.Writable {
-  constructor(url, type) {
+  constructor() {
     super();
     this._size = 0;
-    this._url = url;
-    this._type = type;
   }
 
   _write(chunk, encoding, next) {
@@ -19,19 +22,28 @@ class SizeStream extends Stream.Writable {
     next();
   }
 
-  size() {
-    return this._size;
-  }
+  size() { return this._size; }
 }
 
+/**
+ * UrlSizeRunner
+ *
+ * Object to send a request to a given URL and measures the size of the URL
+ * Sends request to URL with header: Accept-Encoding: gzip,deflate
+ *
+ * If the response comes back with header: Content-Encoding: gzip (or deflate)
+ * then the response body is decompressed through gunzip (or inflate)
+ *
+ * The size of the compressed and uncompressed response is mesaured by piping
+ * the streams to SizeStream objects.
+ *
+ * @params {string} url - URL to request 
+ */
 class UrlSizeRunner {
-  constructor(url, phantomSize, contentEncoding) {
+  constructor(url) {
     this.url = url;
-    this._phantomSize = phantomSize;
-    this.contentEncoding = contentEncoding;
-
-    this.encodedStream = new SizeStream(url, 'encoded');
-    this.actualStream = new SizeStream(url, 'actual');
+    this.encodedStream = new SizeStream();
+    this.actualStream = new SizeStream();
   }
 
   run(callback) {
@@ -40,12 +52,11 @@ class UrlSizeRunner {
     let options = {
       'hostname' : urlObj.hostname,
       'port' : urlObj.port,
-      'path' : urlObj.path
+      'path' : urlObj.path,
+      'headers' : {
+        'accept-encoding' : 'gzip,deflate'
+      }
     };
-
-    if (self.contentEncoding) {
-      options.headers = {'accept-encoding' : self.contentEncoding};
-    }
 
     let request = Http.get(options);
 
@@ -66,22 +77,11 @@ class UrlSizeRunner {
       }
     });
 
-    self.actualStream.on('finish', () => {
-      callback(null, self);
-    });
+    self.actualStream.on('finish', () => { callback(null, self); });
   }
 
-  phantomSize() {
-    return this._phantomSize;
-  }
-
-  encodedSize() {
-    return this.encodedStream.size();
-  }
-
-  actualSize() {
-    return this.actualStream.size();
-  }
+  encodedSize() { return this.encodedStream.size(); }
+  actualSize() {  return this.actualStream.size(); }
 }
 
 module.exports = UrlSizeRunner;
