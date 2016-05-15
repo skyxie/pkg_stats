@@ -2,10 +2,18 @@
   "name": "pkg_stats",
   "version": "0.0.1",
   "private": true,
+  "scripts": {
+    "test": "mocha spec/stat-runner-spec.js"
+  },
   "dependencies": {
     "phantomjs-prebuilt": "*",
     "async": "*",
     "commander": "*",
     "underscore": "*"
+  },
+  "devDependencies": {
+    "sinon": "*",
+    "sinon-chai": "*",
+    "mocha" : "*"
   }
 }
