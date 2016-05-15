@@ -1,3 +1,4 @@
+"use strict";
 
 const Path = require('path');
 const Url = require('url');
@@ -8,8 +9,6 @@ const _ = require('underscore');
 
 const UrlSizeRunner = require(Path.join(__dirname, 'url-size-runner'));
 
-const ContentTypeRegExp = new RegExp(/^(application|text)\/(javascript|css)/);
-
 /**
  * StatRunner
  *
@@ -18,18 +17,18 @@ const ContentTypeRegExp = new RegExp(/^(application|text)\/(javascript|css)/);
  * 
  */
 class StatRunner {
-  constructor(url) {
+  constructor(url, timeout, contentTypes) {
     this.url = url;
+    this.timeout = timeout;
+    this.contentTypes = contentTypes;
   }
 
   run(callback) {
-    var self = this;
-
     Async.waterfall(
       [
-        callback => StatRunner._spawnPhantom(self.url, callback),
+        callback => StatRunner._spawnPhantom(this.url, this.timeout, callback),
         (json, callback) => StatRunner._parseJSON(json, callback),
-        (phantomResults, callback) => StatRunner._processPhantomResults(phantomResults, callback),
+        (phantomResults, callback) => StatRunner._processPhantomResults(phantomResults, this.contentTypes, callback),
         (uniquePhantomResults, callback) => StatRunner._runUrlSizeRequests(uniquePhantomResults, callback),
       ],
       callback
@@ -45,18 +44,19 @@ class StatRunner {
    * but this calculation is frequently incorrect.
    *
    * @param {string} url - URL to analyze
+   * @param {int} timeout - ms to keep webpage open for dynamic loading
    * @param {function} callback - Callback function to call on completion
    *
    * @callback callback
    * @param {Error} err - Error code in case of failure
    * @param {string} data - Output read from STDOUT of spawns PhantomJS process  
    */
-  static _spawnPhantom(url, callback) {
-    var phantomJsPath = PhantomJS.path,
-        phantomJsArgs = [Path.join(__dirname, 'phantomjs-stats.js'), url];
+  static _spawnPhantom(url, timeout, callback) {
+    let phantomJsPath = PhantomJS.path,
+        phantomJsArgs = [Path.join(__dirname, 'phantomjs-stats.js'), url, timeout];
 
-    var child = ChildProcess.execFile(phantomJsPath, phantomJsArgs);
-    var data = '';
+    let child = ChildProcess.execFile(phantomJsPath, phantomJsArgs);
+    let data = '';
 
     child.on('error', (err) => { callback(err); });
 
@@ -65,13 +65,11 @@ class StatRunner {
     });
 
     child.on('exit', (code, signal) => {
-      if (code != 0) {
+      if (code == 0) {
+        callback(null, data);
+      } else {
         callback(new Error("Failed to collect stats with PhantomJS: "+phantomJsPath+" "+phantomJsArgs.join(" ")));
       }
-    });
-
-    child.stdout.on('finish', () => {
-      callback(null, data);
     });
   }
 
@@ -88,7 +86,7 @@ class StatRunner {
    * @param {Object} result - Object parsed from JSON
    */
   static _parseJSON(json, callback) {
-    var result;
+    let result;
 
     try {
       result = JSON.parse(json);
@@ -116,12 +114,13 @@ class StatRunner {
    * @param {Error} err - Error parsing JSON
    * @param {Object} uniquePhantomResults - Hash of URL => Object which includes size calculated by PhantomJS
    */
-  static _processPhantomResults(phantomResults, callback) {
+  static _processPhantomResults(phantomResults, contentTypes, callback) {
+    let contentTypeRegExp = new RegExp(`^(${contentTypes.join('|')})`);
     let uniquePhantomResults = _.reduce(
       phantomResults,
       (memo, phantomResult) => {
         let key = phantomResult.url;
-        if (ContentTypeRegExp.exec(phantomResult.contentType) && !memo[key]) {
+        if (contentTypeRegExp.exec(phantomResult.contentType) && !memo[key]) {
           // PhantomJS handles the event onResourceReceived multiple times for each resource
           // so the results for each resource need to be uniqued here
           memo[key] = {"phantom_size" : phantomResult.bodySize};
