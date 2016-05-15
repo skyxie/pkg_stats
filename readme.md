@@ -37,12 +37,36 @@ This command will install all libraries needed.
 
 Basic use case - measure size of application/javascript and text/css resources on http://somewhere.com
 
-    ./pkg_stats.js -u http://somewhere.com
+    bin/pkg_stats.js -u http://somewhere.com
 
 Measure size of application/javascript and text/css resources loaded on http://somewhere.com for up to 2 min
 
-    ./pkg_stats.js -u http://somewhere.com -t 120000
+    bin/pkg_stats.js -u http://somewhere.com -t 120000
 
 Measure size of application/javascript, text/css, and image/jpeg resources on http://somewhere.com
 
-    ./pkg_stats.js -u https://somewhere.com -c application/javascript,text/css,image/jpeg
+    bin/pkg_stats.js -u https://somewhere.com -c application/javascript,text/css,image/jpeg
+
+# Output
+
+Output should be a JSON hash:
+
+    {
+      "https://assets.somewhere.com/assets/home.jpg": {
+        "phantom_size": 33585,
+        "encoded_size": 54176,
+        "actual_size": 54176
+      },
+      "https://ajax.googleapis.com/ajax/libs/jquery/2.2.2/jquery.min.js": {
+        "phantom_size": 7847,
+        "encoded_size": 29892,
+        "actual_size": 85656
+      }
+    }
+
+The keys of the hash is the URL for the resource. The attributes of the hash are:
+
+* **phantom_size**: Size measured by PhantomJS
+* **encoded_size**: Encoded bytes downloaded to the browser
+* **actual_size**: Uncompressed size of the resource
+

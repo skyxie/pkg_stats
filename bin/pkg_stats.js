@@ -5,7 +5,7 @@
 const Path = require('path');
 let cmd = require('commander');
 
-const StatRunner = require(Path.join(__dirname, 'stat-runner'));
+const StatRunner = require(Path.join(__dirname, '..', 'lib', 'stat-runner'));
 
 function collect(val, memo) {
   memo.push(val);
