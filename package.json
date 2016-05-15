@@ -3,7 +3,7 @@
   "version": "0.0.1",
   "private": true,
   "scripts": {
-    "test": "mocha spec/stat-runner-spec.js"
+    "test": "mocha spec/stat-runner-spec.js spec/url-size-runner-spec.js"
   },
   "dependencies": {
     "phantomjs-prebuilt": "*",

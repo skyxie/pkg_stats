@@ -180,6 +180,9 @@ describe('StatRunner', () => {
 
       let statRunner = new StatRunner("http://foo.com/bar.js", 123, ["application/javascript"]);
       statRunner.run((err, result) => {
+        StatRunner._spawnPhantom.restore();
+        UrlSizeRunner.prototype.run.restore();
+
         result.should.eql({
           "http://foo.com/bar.js" : {
             "phantom_size" : 123,
@@ -187,6 +190,7 @@ describe('StatRunner', () => {
             "actual_size" : 125
           }
         });
+
         done();
       });
     });
